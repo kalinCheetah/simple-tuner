@@ -1,63 +1,27 @@
-#ifndef _PLAYER_HPP
+#ifndef _RECORDER_HPP
 
-#include "oboe/AudioStreamBuilder.h"
 #include "sk_guitar_tuner.hpp"
 
 #include <android/log.h>
+#include <oboe/Oboe.h>
+#include "oboe/AudioStreamBuilder.h"
+
 #include <chrono>
 #include <cmath>
 #include <memory>
 #include <mutex>
-#include <oboe/Oboe.h>
 #include <thread>
 #include <map>
 
-class AudioData {
-    AudioData(char* path) {
-        if (path == nullptr) {
-            return;
-        }
-        if (sound.empty()) {
-//            WAVHeader header;
-//            sound = readFloatWAV(path, header);
-//
-//            __android_log_print(ANDROID_LOG_INFO, NAME_LOG, "SOUND WAV SIZE (SAMPLE_SIZE): %lu",
-//                    sound.size());
-//            __android_log_print(ANDROID_LOG_INFO, NAME_LOG, "SOUND WAV Sample Rate: %d", header.sampleRate);
-//            __android_log_print(ANDROID_LOG_INFO, NAME_LOG, "SOUND WAV Channels: %d", header.numChannels);
-//            __android_log_print(ANDROID_LOG_INFO, NAME_LOG, "SOUND WAV Bits per Sample: %d",
-//                    header.bitsPerSample);
-
-        }
-    }
-
-    AudioData(const AudioData& oth) = delete;
-
-    AudioData(AudioData&& oth) = delete;
-
-    ~AudioData() {
-    }
-
+class AudioRecorder : public oboe::AudioStreamDataCallback {
 public:
-    static AudioData* get_audio_data(char* path=nullptr) {
-        static AudioData audio_data(path);
-        return &audio_data;
-    }
-
-    const char * NAME_LOG = "Player";
-
-    std::vector<float> sound;
-};
-
-class AudioPlayer : public oboe::AudioStreamDataCallback {
-public:
-    AudioPlayer() : _isPlaying(false) {
+    AudioRecorder() : _isPlaying(false) {
         oboe::Result result = startPlayback();
         if (result != oboe::Result::OK) {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioPlayer",
+            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
                     "\033[1;41m Stream started wrong.\033[0m");
         } else {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioPlayer",
+            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
                     "\033[1;42m Stream started successfully.\033[0m");
         }
     }
@@ -110,7 +74,7 @@ public:
             return oboe::DataCallbackResult::Stop;
         }
         if(audio_data and not audio_data->sound.empty()){//} and _isPlaying) {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioPlayer",
+            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
                 "Playback index: %zu, Sound size: %zu", _playbackIndex, audio_data->sound.size());
 
             if (_playbackIndex < audio_data->sound.size()) {
@@ -143,4 +107,4 @@ private:
     bool _isPlaying;
     std::mutex _dataMutex;
 };
-#endif //_PLAYER_HPP
+#endif //_RECORDER_HPP

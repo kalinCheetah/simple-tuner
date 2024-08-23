@@ -4,6 +4,8 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:sk_guitar_tuner/SoundData.dart';
+
 import 'sk_guitar_tuner_bindings_generated.dart';
 
 /// A very short-lived native function.
@@ -129,3 +131,43 @@ Future<SendPort> _helperIsolateSendPort = () async {
   // can start sending requests.
   return completer.future;
 }();
+
+typedef Dallocate_sound_data  = Pointer<SoundData> Function();
+typedef Callocate_sound_data  = Pointer<SoundData> Function();
+
+final Dallocate_sound_data  allocateSoundData =
+_dylib
+      .lookup<NativeFunction<Callocate_sound_data>>("allocate_sound_data")
+    .asFunction();
+
+typedef Dallocate_sound_data2  = Pointer<SoundData> Function(int);
+typedef Callocate_sound_data2  = Pointer<SoundData> Function(Int32);
+
+final Dallocate_sound_data2  allocateSoundDataWithSize =
+_dylib
+    .lookup<NativeFunction<Callocate_sound_data2>>("allocate_sound_data_with_size")
+    .asFunction();
+
+typedef Dfree_sound_data  = void Function(Pointer<SoundData>);
+typedef Cfree_sound_data  = Void Function(Pointer<SoundData>);
+
+final Dfree_sound_data  freeSoundData =
+_dylib
+    .lookup<NativeFunction<Cfree_sound_data>>("free_sound_data")
+    .asFunction();
+
+typedef DartStartAudioRecorder   = void Function(Pointer<SoundData>);
+typedef CStartAudioRecorder      = Void Function(Pointer<SoundData>);
+
+final DartStartAudioRecorder startAudioRecorder =
+_dylib
+    .lookup<NativeFunction<CStartAudioRecorder>>("start_audio_recorder")
+    .asFunction();
+
+typedef Dstop_audio_recorder  = void Function();
+typedef Cstop_audio_recorder  = Void Function();
+
+final Dstop_audio_recorder  stopAudioRecorder =
+_dylib
+    .lookup<NativeFunction<Cstop_audio_recorder>>("stop_audio_recorder")
+    .asFunction();

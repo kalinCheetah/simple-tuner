@@ -19,5 +19,4 @@ add_library(sk_guitar_tuner SHARED
   ${SRC_FILES}
 )
 
-#set_target_properties(sk_guitar_tuner PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(sk_guitar_tuner oboe)
+target_link_libraries(sk_guitar_tuner oboe log)
