@@ -1,8 +1,9 @@
-
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
+
+import 'package:ffi/ffi.dart';
 
 import 'package:sk_guitar_tuner/SoundData.dart';
 
@@ -156,8 +157,8 @@ _dylib
     .lookup<NativeFunction<Cfree_sound_data>>("free_sound_data")
     .asFunction();
 
-typedef DartStartAudioRecorder   = void Function(Pointer<SoundData>);
-typedef CStartAudioRecorder      = Void Function(Pointer<SoundData>);
+typedef DartStartAudioRecorder   = void Function(Pointer<SoundData>, Pointer<Utf8>);
+typedef CStartAudioRecorder      = Void Function(Pointer<SoundData>, Pointer<Utf8>);
 
 final DartStartAudioRecorder startAudioRecorder =
 _dylib

@@ -1,7 +1,11 @@
 import 'dart:ffi';
+import 'dart:io';
 
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:audio_wave/audio_wave.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'package:sk_guitar_tuner/sk_guitar_tuner.dart' as sk_guitar_tuner;
 import 'package:sk_guitar_tuner/SoundData.dart';
 
@@ -14,6 +18,8 @@ class TunerView extends StatefulWidget {
 
 class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMixin {
   String info = "No information about frequencies.";
+  String dirPath = "";
+
   bool _isPlaying = false;
 
   void _toggleAnimation() {
@@ -35,6 +41,13 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    createDirectory();
+  }
+
+  void createDirectory() async{
+    final Directory extDir = await getApplicationDocumentsDirectory();
+    dirPath = '${extDir.path}/Sound';
+    await Directory(dirPath).create(recursive: true);
   }
 
   @override
@@ -47,14 +60,27 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
   void _recordSound() {
     print('Record sound from flutter');
     Pointer<SoundData> soundData = sk_guitar_tuner.allocateSoundData();
+  Pointer<Utf8> nativeDirPath = dirPath.toNativeUtf8();
+    sk_guitar_tuner.startAudioRecorder(soundData, nativeDirPath);
 
-    sk_guitar_tuner.startAudioRecorder(soundData);
+    //
+    // info = "Frequencies: ";
+    // if (soundData.ref.frequencies == nullptr) {
+    //   print("NULL PTR");
+    // }
+    //
+    // final frequenciesList = soundData.ref.frequencies.asTypedList(soundData.ref.frequencySize);
+    //
+    // for (int i = 0; i < frequenciesList.length; i++) {
+    //   print('Frequency $i: ${frequenciesList[i]}, ');
+    //   info += '${frequenciesList[i]}, ';
+    // }
 
     sk_guitar_tuner.stopAudioRecorder();
 
     sk_guitar_tuner.freeSoundData(soundData);
     print('Record sound from flutter');
-
+    malloc.free(nativeDirPath);
   }
 
   @override

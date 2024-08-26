@@ -1,3 +1,6 @@
+#ifndef _SK_GUITAR_TUNER_HPP
+#define _SK_GUITAR_TUNER_HPP
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,5 +20,9 @@
 
 extern "C"
 {
-
+const int SAMPLE_RATE = 44100;
+const int RECORDER_TIME_MS = 3000;
+const int MC_IN_SEC = 1000;
 }
+
+#endif //_SK_GUITAR_TUNER_HPP

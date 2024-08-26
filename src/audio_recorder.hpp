@@ -1,4 +1,5 @@
 #ifndef _RECORDER_HPP
+#define _RECORDER_HPP
 
 #include "sk_guitar_tuner.hpp"
 
@@ -11,100 +12,88 @@
 #include <memory>
 #include <mutex>
 #include <thread>
-#include <map>
+#include <vector>
 
 class AudioRecorder : public oboe::AudioStreamDataCallback {
 public:
-    AudioRecorder() : _isPlaying(false) {
-        oboe::Result result = startPlayback();
-        if (result != oboe::Result::OK) {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
-                    "\033[1;41m Stream started wrong.\033[0m");
-        } else {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
-                    "\033[1;42m Stream started successfully.\033[0m");
-        }
-    }
+    AudioRecorder() : _isRecording(false) {}
 
-    oboe::Result startPlayback() {
+    bool startRecording() {
         oboe::AudioStreamBuilder builder;
-        builder.setDirection(oboe::Direction::Output)
+        builder.setDirection(oboe::Direction::Input)
                 ->setFormat(oboe::AudioFormat::Float)
                 ->setChannelCount(oboe::ChannelCount::Mono)
                 ->setSampleRate(SAMPLE_RATE)
                 ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
                 ->setDataCallback(this);
 
-        oboe::Result result = builder.openStream(_playbackStream);
+        oboe::Result result = builder.openStream(_recordingStream);
         if (result != oboe::Result::OK) {
-            std::cerr << "Failed to open playback stream. Error: "
-                      << oboe::convertToText(result) << std::endl;
-            return oboe::Result::ErrorBase;
+            __android_log_print(ANDROID_LOG_INFO, NAME_LOG,
+                    "Failed to open recording stream. Error: %s", oboe::convertToText(result));
+            return false;
         }
 
-        result = _playbackStream->requestStart();
+        result = _recordingStream->requestStart();
         if (result != oboe::Result::OK) {
-            std::cerr << "Failed to start playback stream. Error: "
-                      << oboe::convertToText(result) << std::endl;
-            return oboe::Result::ErrorBase;
+            __android_log_print(ANDROID_LOG_INFO, NAME_LOG,
+                    "Failed to open recording stream. Error: %s", oboe::convertToText(result));
+            return false;
         }
 
-        _isPlaying = true;
-        return oboe::Result::OK;
+        _isRecording = true;
+        return true;
     }
 
-    void stopPlayback() {
-        if (_playbackStream) {
-            _playbackStream->requestStop();
-            _playbackStream->close();
-            _playbackStream.reset();
+    void stopRecording() {
+        if (_recordingStream) {
+            _recordingStream->requestStop();
+            _recordingStream->close();
+            _recordingStream.reset();
         }
-        _isPlaying = false;
+        _isRecording = false;
     }
 
     oboe::DataCallbackResult onAudioReady(oboe::AudioStream* stream,
             void* audioData,
             int32_t numFrames) override {
-        AudioData* audio_data = AudioData::get_audio_data();
-
         float* floatData = static_cast<float*>(audioData);
+
         std::lock_guard<std::mutex> lock(_dataMutex);
 
-        if (not audio_data || audio_data->sound.empty()) {
-            return oboe::DataCallbackResult::Stop;
-        }
-        if(audio_data and not audio_data->sound.empty()){//} and _isPlaying) {
-            __android_log_print(ANDROID_LOG_INFO, "OboeAudioRecorder",
-                "Playback index: %zu, Sound size: %zu", _playbackIndex, audio_data->sound.size());
+        if (_isRecording) {
+            _recordedData.insert(_recordedData.end(), floatData,
+                    floatData + numFrames);
 
-            if (_playbackIndex < audio_data->sound.size()) {
-                int32_t framesToCopy =
-                        std::min(numFrames, static_cast<int32_t>(audio_data->sound.size() -
-                                _playbackIndex));
-                std::copy(audio_data->sound.begin() + _playbackIndex,
-                        audio_data->sound.begin() + _playbackIndex + framesToCopy,
-                        floatData);
-                _playbackIndex += framesToCopy;
+            if (_recordedData.size() >= SAMPLE_RATE * RECORDER_TIME_MS / MC_IN_SEC) {
 
-                if (_playbackIndex >= audio_data->sound.size()) {
-                    _isPlaying = false;
-                    return oboe::DataCallbackResult::Stop;
-                }
-                return oboe::DataCallbackResult::Continue;
-
-            } else {
-                std::fill(floatData, floatData + numFrames, 0.0f);
-                _isPlaying = false;
                 return oboe::DataCallbackResult::Stop;
             }
+
+            return oboe::DataCallbackResult::Continue;
+        } else {
+            std::fill(floatData, floatData + numFrames, 0.0f);
         }
+
         return oboe::DataCallbackResult::Stop;
     }
 
+    void clear(){
+        _recordedData.clear();
+    }
+
+    std::vector<float>& get_recorded_sound() {
+        return _recordedData;
+    }
+
 private:
-    std::shared_ptr<oboe::AudioStream> _playbackStream;
+    const char* NAME_LOG = "AudioRecorder";
+
+    std::shared_ptr<oboe::AudioStream> _recordingStream;
+    std::vector<float> _recordedData;
     size_t _playbackIndex = 0;
-    bool _isPlaying;
+    bool _isRecording;
     std::mutex _dataMutex;
 };
+
 #endif //_RECORDER_HPP
