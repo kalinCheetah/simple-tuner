@@ -57,7 +57,7 @@ FFI_PLUGIN_EXPORT void start_audio_recorder(SoundData* sound_data, char* path) {
             if(path != nullptr) {
                 auto sound = audioRecorder.get_recorded_sound();
                 std::string all_path = std::string(path) + "/";// + std::to_string(milliseconds);
-                std::string filename = all_path + "record.dat";
+                std::string filename = all_path + "record.wav";
 
                 __android_log_print(ANDROID_LOG_INFO, "Audio", "\033[1;93m  Save record audio %s\033[0m", filename.c_str());
 
