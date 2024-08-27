@@ -44,7 +44,7 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
     createDirectory();
   }
 
-  void createDirectory() async{
+  void createDirectory() async {
     final Directory extDir = await getApplicationDocumentsDirectory();
     dirPath = '${extDir.path}/Sound';
     await Directory(dirPath).create(recursive: true);
@@ -57,10 +57,20 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
     super.dispose();
   }
 
+  Future<String> get getLocalPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  Future<File> getLocalFile(String name) async {
+    final path = await getLocalPath;
+    return File('$path/$name');
+  }
+
   void _recordSound() {
     print('Record sound from flutter');
     Pointer<SoundData> soundData = sk_guitar_tuner.allocateSoundData();
-  Pointer<Utf8> nativeDirPath = dirPath.toNativeUtf8();
+    Pointer<Utf8> nativeDirPath = dirPath.toNativeUtf8();
     sk_guitar_tuner.startAudioRecorder(soundData, nativeDirPath);
 
     //
@@ -81,6 +91,15 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
     sk_guitar_tuner.freeSoundData(soundData);
     print('Record sound from flutter');
     malloc.free(nativeDirPath);
+  }
+
+  void _existSound() async {
+    File sound = await getLocalFile("Sound/record.wav");
+    if (await sound.exists()) {
+      print('Sound exists ${sound.path}');
+    }else{
+      print("Sound doesn't exists ${sound.path}");
+    }
   }
 
   @override
@@ -114,6 +133,24 @@ class _TunerViewState extends State<TunerView> with SingleTickerProviderStateMix
                 ),
               ),
               child: Text('Record sound'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _toggleAnimation();
+                _existSound();
+              },
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.resolveWith<Color?>(
+                      (Set<MaterialState> states) {
+                    if (states.contains(MaterialState.pressed)) {
+                      return Colors.red; // Color when pressed
+                    }
+                    return Colors.lightBlueAccent; // Default color
+                  },
+                ),
+              ),
+              child: Text('Test sound'),
             ),
             const SizedBox(height: 20),
             if (_isPlaying)
